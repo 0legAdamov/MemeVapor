@@ -2,6 +2,15 @@
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
 
+
+# Vapor
+#
+*.sqlite
+Public/
+Dockerfile
+docker-compose.yml
+Tests/
+
 ## User settings
 xcuserdata/
 

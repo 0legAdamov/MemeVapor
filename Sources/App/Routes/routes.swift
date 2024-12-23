@@ -2,21 +2,16 @@ import Vapor
 
 
 func routes(_ app: Application) throws {
-    app.get { req async in
-        "It works!"
+    
+    app.get("all") { req in
+        return try await Template.query(on: req.db)
+            .all()
     }
     
-    app.get("hello") { req async -> String in
-        "Hello, world!"
-    }
-    
-    app.get("info") { req in
-        let remoteAddressStr = req.remoteAddress?.description ?? "No remote address info"
-        let publicDir = req.application.directory.publicDirectory
-        let fileManager = FileManager.default.currentDirectoryPath
-        return remoteAddressStr + "\n" + publicDir + "\n" + fileManager
-    }
-    
+    /// Создание нового шаблона. Параметры:
+    /// - `owner_id: String`
+    /// - `owner_name: String`
+    /// - В `body` передать изображение
     app.post("create") { req in
         let create = try req.query.decode(CreateRequest.self)
         
@@ -29,12 +24,14 @@ func routes(_ app: Application) throws {
         
         let id = UUID()
         
-        let template = Template(id: id, owner_id: create.owner_id, owner_name: create.owner_name)
-        try await template.create(on: req.db)
-        
         let path = req.application.directory.publicDirectory + id.uuidString
         try await req.fileio.writeFile(ByteBuffer(data: data), at: path)
+        
+        let template = Template(id: id, owner_id: create.owner_id, owner_name: create.owner_name)
+        try await template.create(on: req.db)
         
         return template
     }
 }
+
+//.. sync

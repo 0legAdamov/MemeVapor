@@ -30,7 +30,7 @@ final class Template: Model, Content, @unchecked Sendable {
 
 
 
-struct CreateTemplate: AsyncMigration {
+struct TemplateMigration: AsyncMigration {
     
     // Prepares the database for storing Galaxy models.
     func prepare(on database: Database) async throws {

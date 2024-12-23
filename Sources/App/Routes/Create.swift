@@ -23,15 +23,6 @@ enum CreateError: AbortError {
 
 
 
-struct CreateResponse: Content {
-    
-    let template_id: String
-    let owner_id: String
-    let owner_name: String
-}
-
-
-
 struct CreateRequest: Content {
     
     let owner_id: String

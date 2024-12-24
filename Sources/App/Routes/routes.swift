@@ -3,6 +3,10 @@ import Vapor
 
 func routes(_ app: Application) throws {
     
+    app.get() { req in
+        return "Hello!"
+    }
+    
     app.get("all") { req in
         return try await Template.query(on: req.db)
             .all()

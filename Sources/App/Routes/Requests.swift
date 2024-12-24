@@ -1,4 +1,5 @@
 import Vapor
+import Foundation
 
 
 enum CreateError: AbortError {
@@ -61,4 +62,11 @@ struct TemplateResponse: Content {
 struct AllResponse: Content {
     let my: [TemplateResponse]
     let other: [TemplateResponse]
+}
+
+
+struct FavoriteRequest: Content {
+    let uid: Int
+    let template_id: UUID
+    let is_favorite: Bool
 }

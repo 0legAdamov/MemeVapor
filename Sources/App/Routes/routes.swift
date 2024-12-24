@@ -13,6 +13,44 @@ func routes(_ app: Application) throws {
     }
     
     
+    app.post("favorite") { req in
+        let request = try req.query.decode(FavoriteRequest.self)
+        
+        guard let _ = try await Template.query(on: req.db).filter(\.$id == request.template_id).first() else {
+            throw Abort(.notFound)
+        }
+        
+        if let user = try? await User.query(on: req.db).filter(\.$id == request.uid).first() {
+            if request.is_favorite {
+                if user.favorites.contains(request.template_id) {
+                    return Response(status: .notModified)
+                } else {
+                    user.favorites.append(request.template_id)
+                    try await user.save(on: req.db)
+                    return Response()
+                }
+            } else {
+                if let index = user.favorites.firstIndex(of: request.template_id) {
+                    user.favorites.remove(at: index)
+                    try await user.save(on: req.db)
+                    return Response()
+                } else {
+                    return Response(status: .notModified)
+                }
+            }
+        } else {
+            if request.is_favorite {
+                let user = User(id: request.uid)
+                user.favorites.append(request.template_id)
+                try await user.create(on: req.db)
+                return Response()
+            } else {
+                return Response(status: .notModified)
+            }
+        }
+    }
+    
+    
     app.get("all") { req in
         let templates = try await Template.query(on: req.db)
             .sort(\.$createdAt, .descending)

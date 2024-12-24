@@ -1,5 +1,5 @@
 import Vapor
-
+import Fluent
 
 func routes(_ app: Application) throws {
     
@@ -7,15 +7,39 @@ func routes(_ app: Application) throws {
         return "Hello!"
     }
     
-    app.get("all") { req in
-        return try await Template.query(on: req.db)
-            .all()
+    
+    app.get("users") { req in
+        return try await User.query(on: req.db).all()
     }
     
-    /// Создание нового шаблона. Параметры:
-    /// - `owner_id: String`
-    /// - `owner_name: String`
-    /// - В `body` передать изображение
+    
+    app.get("all") { req in
+        let templates = try await Template.query(on: req.db)
+            .sort(\.$createdAt, .descending)
+            .all()
+        
+        guard let allRequest = try? req.query.decode(AllRequest.self),
+              let user = try? await User.query(on: req.db).filter(\.$id == allRequest.uid).first()
+        else {
+            let all = templates.map { TemplateResponse(template: $0, frames: []) }
+            return AllResponse(my: [], other: all)
+        }
+        
+        var my = [TemplateResponse]()
+        var other = [TemplateResponse]()
+        
+        templates.filter { $0.id != nil }.forEach { template in
+            let tResponse = TemplateResponse(template: template, frames: user.textFrames)
+            if user.favorites.contains(template.id!) {
+                my.append(tResponse)
+            } else {
+                other.append(tResponse)
+            }
+        }
+        return AllResponse(my: my, other: other)
+    }
+    
+    
     app.post("create") { req in
         let create = try req.query.decode(CreateRequest.self)
         
@@ -31,8 +55,12 @@ func routes(_ app: Application) throws {
         let path = req.application.directory.publicDirectory + id.uuidString
         try await req.fileio.writeFile(ByteBuffer(data: data), at: path)
         
-        let template = Template(id: id, owner_id: create.owner_id, owner_name: create.owner_name)
+        let template = Template(id: id, ownerId: create.owner_id, ownerName: create.owner_name)
         try await template.create(on: req.db)
+        
+        let user = User(id: create.owner_id)
+        user.favorites.append(id)
+        try await user.create(on: req.db)
         
         return template
     }
